@@ -17,9 +17,9 @@ resource "aws_vpc" "vpc_terraform" {
   cidr_block = "10.0.0.0/16"
 
   tags = {
-    Name      = "VPC TERRAFORM"
+    Name      = "VPC Terraform"
     Owner     = "Douglas"
-    CreatedAt = "2023-02-23"
+    CreatedAt = "2024-02-23"
   }
 
 }
@@ -53,7 +53,7 @@ resource "aws_internet_gateway" "vpc_terraform" {
   vpc_id = aws_vpc.vpc_terraform.id
 
   tags = {
-    Name      = "GW VPC SUBNET TERRAFORM"
+    Name      = "Terraform-igw"
     Owner     = "Douglas"
     CreatedAt = "2023-02-23"
   }
@@ -87,12 +87,12 @@ resource "aws_route_table_association" "rta2" {
 
 # Criando security group // Resource: aws_security_group
 resource "aws_security_group" "webserver" {
-  name        = "webserver"
+  name        = "terraform-sg-web"
   description = "Webserver network traffic"
   vpc_id      = aws_vpc.vpc_terraform.id
 
   tags = {
-    Name = "Allow traffic"
+    Name = "Terraform Sg"
   }
 }
 
@@ -129,7 +129,6 @@ resource "aws_security_group_rule" "app_server_sg_outbound" {
   #ipv6_cidr_blocks  = [aws_vpc.vpc_terraform.ipv6_cidr_block]
   security_group_id = aws_security_group.webserver.id
 }
-
 
 #Criando instancia
 resource "aws_instance" "web" {
