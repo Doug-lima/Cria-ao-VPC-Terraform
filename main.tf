@@ -28,7 +28,7 @@ resource "aws_vpc" "vpc_terraform" {
 resource "aws_subnet" "subnet1" {
   vpc_id            = aws_vpc.vpc_terraform.id
   cidr_block        = "10.0.1.0/24"
-  availability_zone = var.availability_zones[0] # Variable declared in variables.tfvars 
+  availability_zone = "us-east-1a"
 
   tags = {
     Name = "Subnet1"
@@ -40,7 +40,7 @@ resource "aws_subnet" "subnet1" {
 resource "aws_subnet" "subnet2" {
   vpc_id            = aws_vpc.vpc_terraform.id
   cidr_block        = "10.0.2.0/24"
-  availability_zone = var.availability_zones[1] # Variable declared in variables.tfvars 
+  availability_zone = "us-east-1b"
 
   tags = {
     Name = "Subnet2"
@@ -53,14 +53,13 @@ resource "aws_internet_gateway" "vpc_terraform" {
   vpc_id = aws_vpc.vpc_terraform.id
 
   tags = {
-    Name      = "GW VPC SUBNET1 TERRAFORM"
+    Name      = "GW VPC SUBNET TERRAFORM"
     Owner     = "Douglas"
     CreatedAt = "2023-02-23"
   }
 }
 
 # Configuring route table
-
 resource "aws_route_table" "rt1" {
   vpc_id = aws_vpc.vpc_terraform.id
 
@@ -68,11 +67,6 @@ resource "aws_route_table" "rt1" {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.vpc_terraform.id
   }
-
-  #route {
-  #  ipv6_cidr_block        = "::/0"
-  #  egress_only_gateway_id = aws_egress_only_internet_gateway.vpc_terraform.id
-  #}
 
   tags = {
     Name = "Public"
@@ -91,51 +85,59 @@ resource "aws_route_table_association" "rta2" {
   route_table_id = aws_route_table.rt1.id
 }
 
-# Configuring security group
+# Criando security group // Resource: aws_security_group
 resource "aws_security_group" "webserver" {
   name        = "webserver"
   description = "Webserver network traffic"
   vpc_id      = aws_vpc.vpc_terraform.id
-
-  ingress {
-    description = "SSH from anywhere"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.workstation_ip]
-    # ipv6_cidr_blocks = [aws_vpc.vpc_terraform.ipv6_cidr_block]
-  }
-
-  ingress {
-    description = "80 from anywhere"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    # ipv6_cidr_blocks = [aws_vpc.vpc_terraform.ipv6_cidr_block]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   tags = {
     Name = "Allow traffic"
   }
 }
 
-#Criando instancia
+# Criando Regra de entrada para liberar a porta 22 // Resource: aws_security_group_rule
+resource "aws_security_group_rule" "app_server_sg_inbound_22" {
+  description = "SSH from anywhere"
+  type        = "ingress"
+  from_port   = 22
+  to_port     = 22
+  protocol    = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+  # ipv6_cidr_blocks  = [aws_vpc.vpc_terraform.ipv6_cidr_block]
+  security_group_id = aws_security_group.webserver.id ##Resource: aws_vpc_endpoint_security_group_association
+}
 
+# Criando Regra de entrada para liberar a porta 80 // Resource: aws_security_group_rule
+resource "aws_security_group_rule" "app_server_sg_inbound_80" {
+  description = "80 from anywhere"
+  type        = "ingress"
+  from_port   = 80
+  to_port     = 80
+  protocol    = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+  # ipv6_cidr_blocks  = [aws_vpc.vpc_terraform.ipv6_cidr_block]
+  security_group_id = aws_security_group.webserver.id ##Resource: aws_vpc_endpoint_security_group_association
+}
+
+resource "aws_security_group_rule" "app_server_sg_outbound" {
+  type        = "egress"
+  from_port   = 0
+  to_port     = 0
+  protocol    = "-1"
+  cidr_blocks = ["0.0.0.0/0"]
+  #ipv6_cidr_blocks  = [aws_vpc.vpc_terraform.ipv6_cidr_block]
+  security_group_id = aws_security_group.webserver.id
+}
+
+
+#Criando instancia
 resource "aws_instance" "web" {
   ami           = "ami-09e67e426f25ce0d7"
   instance_type = "t3a.small"
-  # key_name               = var.key_name
-  subnet_id              = aws_subnet.subnet1.id
-  vpc_security_group_ids = [aws_security_group.webserver.id]
-
+  # key_name               = definir uma chave para acesso remoto
+  subnet_id                   = aws_subnet.subnet1.id
+  vpc_security_group_ids      = [aws_security_group.webserver.id]
   associate_public_ip_address = true
 
   #userdata
@@ -148,6 +150,6 @@ resource "aws_instance" "web" {
  EOF
 
   tags = {
-    Name = "CloudAcademy"
+    Name = "EC2 Terraform"
   }
 }
