@@ -1,4 +1,4 @@
-region             = "us-west-1"
-availability_zones = ["us-west-1a", "us-west-1b"]
+region             = "us-east-1"
+availability_zones = ["us-east-1a", "us-east-1b"]
 instance_type      = "t3.micro"
-key_name           = "Criação_VPC_Terraform"
+key_name           = "Criacao_VPC_Terraform"
